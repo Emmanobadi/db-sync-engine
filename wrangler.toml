@@ -1,0 +1,12 @@
+name = "db-sync-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[queues.producers]]
+queue = "sync-retry-queue"
+binding = "SYNC_QUEUE"
+
+[[queues.consumers]]
+queue = "sync-retry-queue"
+max_batch_size = 10
+max_batch_timeout = 30

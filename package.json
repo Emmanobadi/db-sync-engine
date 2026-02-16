@@ -1,0 +1,35 @@
+{
+  "name": "db-sync-engine",
+  "version": "1.0.0",
+  "description": "Database-to-database sync with retry queue",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "listen": "node src/realtime-listener.js",
+    "backfill": "node src/backfill.js",
+    "loadtest": "node src/load-test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emmanobadi/db-sync-engine.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/emmanobadi/db-sync-engine/issues"
+  },
+  "homepage": "https://github.com/emmanobadi/db-sync-engine#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
+    "drizzle-orm": "^0.45.1",
+    "hono": "^4.11.9"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260214.0",
+    "drizzle-kit": "^0.31.9",
+    "wrangler": "^4.65.0"
+  }
+}
