@@ -1,8 +1,7 @@
 import { supabase } from './db/supabase.js'
 
-const WORKER_URL = 'http://localhost:8787/sync' // Change to deployed URL later
+const WORKER_URL = 'http://localhost:8787/sync'
 
-// Subscribe to changes on students table
 const channel = supabase
   .channel('students-changes')
   .on('postgres_changes', 
@@ -10,11 +9,17 @@ const channel = supabase
     async (payload) => {
       console.log('Change detected:', payload)
       
-      // Forward to Worker
+      // Transform payload to match Worker format
+      const workerPayload = {
+        type: payload.eventType,
+        record: payload.new,
+        old_record: payload.old
+      }
+      
       await fetch(WORKER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(workerPayload)
       })
     }
   )
