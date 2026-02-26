@@ -10,6 +10,17 @@ Automatically syncs data between two PostgreSQL databases. When you add, edit, o
 - Retries if sync fails
 - Logs every operation
 
+## TypeScript & Production Deployment
+
+Fully migrated to TypeScript and deployed to Cloudflare:
+- All `.js` files converted to `.ts`
+- Strict type checking enabled
+- Webhook trigger via Supabase Edge Function
+- Deployed to Cloudflare Workers with Queue
+- Hourly cron trigger for missed records
+
+**Live Worker:** https://db-sync-worker.emmanaliob.workers.dev
+
 ## Tech Stack
 
 - **Supabase PostgreSQL** - Both databases
@@ -38,8 +49,20 @@ id | fname  | lname | email
 ```
 id | data (JSON)
 1  | {"fname":"Emman","lname":"Obadi","email":"emman@test.com"}
-```
 
+
+### Trigger Method
+
+**Production Setup (Webhook):**
+1. Database change detected by PostgreSQL trigger
+2. Trigger calls Supabase Edge Function
+3. Edge Function POSTs to Cloudflare Worker
+4. Worker syncs to Database 2
+
+**Backup Method (Realtime Listener):**
+- Run `npm run listen` on your machine
+- Detects changes via Supabase Realtime
+- Useful for development
 ## Setup
 
 ### 1. Install
@@ -92,31 +115,70 @@ In Supabase:
 1. Go to **Database** → **Tables** → **students**
 2. Click **"Enable Realtime"** button
 
+### 5. Create Webhook Trigger (Production)
+
+**Enable pg_net extension:**
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_net;
+```
+
+**Create trigger function:**
+```sql
+CREATE OR REPLACE FUNCTION notify_sync_function()
+RETURNS TRIGGER AS $$
+DECLARE
+  payload jsonb;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    payload := jsonb_build_object('type', TG_OP, 'old_record', row_to_json(OLD));
+  ELSE
+    payload := jsonb_build_object('type', TG_OP, 'record', row_to_json(NEW));
+  END IF;
+
+  PERFORM net.http_post(
+    url := 'https://YOUR_PROJECT.supabase.co/functions/v1/rapid-api',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer YOUR_SUPABASE_ANON_KEY'
+    ),
+    body := payload
+  );
+  
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER students_sync_trigger
+  AFTER INSERT OR UPDATE OR DELETE ON students
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_sync_function();
+```
+
+Replace `YOUR_PROJECT` and `YOUR_SUPABASE_ANON_KEY` with your values.
+
 ## Running
 
-**Start the Worker:**
+### Development (Local)
 ```bash
-npm run dev
+npm run dev         # Start Worker locally
+npm run listen      # Start realtime listener (backup method)
 ```
 
-**Start the Listener (in another terminal):**
+### Production (Deployed)
+
+**Deploy to Cloudflare:**
 ```bash
-npm run listen
+npx wrangler queues create sync-retry-queue  # Create queue
+npx wrangler deploy                           # Deploy Worker
 ```
 
-Now insert a student in Database 1 and watch it appear in Database 2!
+Worker URL: https://db-sync-worker.emmanaliob.workers.dev
 
-## Commands
-```bash
-npm run dev         # Start sync worker
-npm run listen      # Start realtime listener
-npm run backfill    # Sync all existing records
-npm run loadtest    # Test with 200 records
-```
+**Set up webhook:** Follow trigger setup in README above
 
 ## Test Results
 
-- ✅ 201 records synced successfully
+- ✅ 213 records synced successfully
 - ✅ INSERT operations working automatically
 - ✅ UPDATE operations working
 - ✅ DELETE operations working
@@ -127,12 +189,12 @@ npm run loadtest    # Test with 200 records
 db-sync-engine/
 ├── src/
 │   ├── db/
-│   │   ├── schema.js           # Table definitions
-│   │   └── supabase.js         # Supabase config
+│   │   ├── schema.ts           # Table definitions
+│   │   └── supabase.ts         # Supabase config
 │   ├── index.js                # Sync worker
-│   ├── realtime-listener.js    # Watches for changes
-│   ├── backfill.js             # Sync existing data
-│   └── load-test.js            # Test with 200 records
+│   ├── realtime-listener.ts    # Watches for changes
+│   ├── backfill.ts             # Sync existing data
+│   └── load-test.ts            # Test with 200 records
 ├── wrangler.toml               # Cloudflare config
 └── package.json
 ```
