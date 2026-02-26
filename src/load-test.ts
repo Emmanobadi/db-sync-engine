@@ -1,6 +1,6 @@
-import { supabase } from './db/supabase.js'
+import { supabase } from './db/supabase'
 
-async function loadTest() {
+async function loadTest(): Promise<void> {
   console.log('Starting load test - creating 200 students...')
   const startTime = Date.now()
   
@@ -13,7 +13,6 @@ async function loadTest() {
     })
   }
   
-  // Insert all 200 students
   const { error } = await supabase
     .from('students')
     .insert(students)
@@ -28,8 +27,7 @@ async function loadTest() {
   
   await new Promise(resolve => setTimeout(resolve, 10000))
   
-  // Check how many synced
-  const { data: synced, error: syncError } = await supabase
+  const { data: synced } = await supabase
     .from('students_sync')
     .select('id')
   

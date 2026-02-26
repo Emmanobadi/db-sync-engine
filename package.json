@@ -28,8 +28,11 @@
     "hono": "^4.11.9"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260214.0",
+    "@cloudflare/workers-types": "^4.20260304.0",
+    "@types/node": "^25.3.0",
     "drizzle-kit": "^0.31.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
     "wrangler": "^4.65.0"
   }
 }

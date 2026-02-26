@@ -1,9 +1,9 @@
-import { supabase } from './db/supabase.js'
+import { supabase } from './db/supabase'
+import type { Student } from './types'
 
-async function backfillData() {
+async function backfillData(): Promise<void> {
   console.log('Starting back-fill...')
   
-  // Get all records from students table
   const { data: students, error } = await supabase
     .from('students')
     .select('*')
@@ -15,8 +15,7 @@ async function backfillData() {
   
   console.log(`Found ${students.length} students to sync`)
   
-  // Sync each student to students_sync
-  for (const student of students) {
+  for (const student of students as Student[]) {
     const jsonbData = {
       fname: student.fname,
       lname: student.lname,
